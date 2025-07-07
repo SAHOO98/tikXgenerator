@@ -1,9 +1,9 @@
 import os
 import glob
 import subprocess
-
+from typing import Optional
 class Graph:
-    def __init__(self, n:int, vn: list[str], pos:list[tuple[float,float]] , erel:list[tuple[str,str,float,float]], ns=None,es=None):
+    def __init__(self, n:int, vn: list[str], pos:list[tuple[float,float]] , erel:list[tuple[str,str,float,float]], ns:Optional[list[str]] = None,es:Optional[list[str]] = None) -> None:
         if len(pos) == n:
             self.num_vertices = n
             self.vertex_names = vn
@@ -107,6 +107,9 @@ class Graph:
 
         return self.tex_output
        
+def input_graph():
+    #take input from a .input file
+    pass    
 
 def main():
     #edge relation : ('starting vertex', 'ending vertec', left bend, right bend)
