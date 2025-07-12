@@ -28,6 +28,8 @@ class Graph:
         self.tex_output = ''
         self.tikzpicture =''
 
+        self.create_tikzpicture()
+
     
     def create_vertices(self):
         vertex_style = self.vertex_style[0]
@@ -61,7 +63,7 @@ class Graph:
         x = input()
         if x=="Y" or x=='y':
             with open(file_name, "w") as file:
-                file.write(self.create_tikzpicture())
+                file.write(self.tikzpicture)
         else:
             print('File writing is aborted!')
             
@@ -100,7 +102,7 @@ class Graph:
 
 \begin{{document}}
 
-{self.create_tikzpicture()}
+{self.tikzpicture}
 
 \end{{document}}
             '''
@@ -113,7 +115,8 @@ def input_graph():
 
 def main():
     #edge relation : ('starting vertex', 'ending vertec', left bend, right bend)
-    g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(0,2),(2,4),(4,2),(4,0),(2,-2),(2,-4),(6,4)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q5',0,0),('q5','q6',0,0),('q6','q7',0,0),('q4','q8',0,0),('q8','q7',15,0)])
+    #g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(0,2),(2,4),(4,2),(4,0),(2,-2),(2,-4),(6,4)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q5',0,0),('q5','q6',0,0),('q6','q7',0,0),('q4','q8',0,0),('q8','q7',15,0)])
+    g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(1,1),(0,2),(-1,1),(-2,-1),(2,-1),(-1,-2),(1,-2)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q1',0,0),('q1','q5',0,0),('q1','q6',0,0),('q5','q7',0,0),('q6','q8',0,0)])
     g.save_tikzpicture_to_file()
     g.run_pdflatex()
     
