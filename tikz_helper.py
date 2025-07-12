@@ -31,15 +31,15 @@ class Graph:
         self.create_tikzpicture()
 
     
-    def create_vertices(self):
+    def create_vertices(self)-> None:
         vertex_style = self.vertex_style[0]
         self.tikz_vertex = '\n'.join(["\t"+rf"\node[style={vertex_style}] ({self.vertex_names[x]}) at ({self.vertex_position[x][0]},{self.vertex_position[x][1]}) {{{x+1}}};" for x in range(self.num_vertices)])
     
-    def create_edges(self):
+    def create_edges(self) -> None:
         edge_style = self.edge_style[0]
         self.tikz_edges = '\n'.join([f"\t\draw[style={edge_style}, bend left={l}] ({x}) to ({y});" if r==0  else f"\t\draw[style={edge_style}, bend right={r}] ({x}) to ({y});" for (x,y,l,r) in self.edge_relations])
     
-    def create_tikzpicture(self):
+    def create_tikzpicture(self) -> str:
         self.create_vertices()
         self.create_edges()
         self.tikzpicture = rf'''
@@ -57,7 +57,7 @@ class Graph:
         '''
         return self.tikzpicture
     
-    def save_tikzpicture_to_file(self, file_name='default.tikzpicture'):
+    def save_tikzpicture_to_file(self, file_name='default.tikzpicture') ->None:
         # Open a file in write mode
         print(f"Using {file_name} for writing into tikzpicture?[y/n]")
         x = input()
@@ -69,7 +69,7 @@ class Graph:
             
 
 
-    def run_pdflatex(self):
+    def run_pdflatex(self)-> None:
         source_latex = self.__str__()
         with open("temp.tex", "w") as file :
             file.write(source_latex)
@@ -94,7 +94,7 @@ class Graph:
 
 
 
-    def __str__(self):
+    def __str__(self) -> str:
         
         self.tex_output= rf'''
 \documentclass[tikz]{{standalone}}
@@ -108,18 +108,63 @@ class Graph:
             '''
 
         return self.tex_output
-       
-def input_graph():
-    #take input from a .input file
-    pass    
+
+class InputHandler:
+    def __init__(self, file_path:str) -> None:
+        if os.path.exists(file_path):
+            self.file = open(file_path, 'r')
+            self.num_vertices:int  = 0
+            self.vertex_names:list[str] = []
+            self.vertex_position: list[tuple[float,float]] = []
+            self.edge_relations : list[tuple[str,str,float,float]] = []
+            self.vertex_style:list[str] = []
+            self.edge_style:list[str] = []
+            self.input_graph()
+        else:
+            print(f"No Such file is found: {file_path}")
+               
+    def input_graph(self):
+        lines = self.file.readlines()
+        self.num_vertices = int(lines[0])
+        lines = lines[1:]
+        
+        self.vertex_names = lines[0].split(' ')
+        self.vertex_names[self.num_vertices -1] = self.vertex_names[self.num_vertices -1][:-1] 
+        lines = lines[1:]
+        
+        self.vertex_position = [tuple(map(float, lines[c].split(',')))  for c in range(self.num_vertices)]
+
+        lines = lines[self.num_vertices:]
+        if "#" in lines[0] :
+            s, e = tuple ([i for i, x in enumerate(lines) if "#" in x ])
+            edges = lines[s+1:e]
+            self.edge_relations = [ tuple(map(lambda x : float (x[1]) if x[0]>1 else x[1], enumerate(edge.split(',')))) for edge in edges]
+            lines = lines[e+1:]
+        
+        sp1 = lines[0].index(' ')
+        sp2 = lines[1].index(' ')
+        self.vertex_style = [lines[0][:sp1],lines[0][sp1+1:-1]]
+        
+        self.edge_style =  [lines[1][:sp2],lines[1][sp2+1:-1]]
+    
+    def __str__(self) -> str:
+        return f"{self.num_vertices}\n{self.vertex_names}\n{self.vertex_position}\n{self.edge_relations}\n{self.edge_style}\n{self.vertex_style}"
+        
+        
 
 def main():
     #edge relation : ('starting vertex', 'ending vertec', left bend, right bend)
     #g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(0,2),(2,4),(4,2),(4,0),(2,-2),(2,-4),(6,4)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q5',0,0),('q5','q6',0,0),('q6','q7',0,0),('q4','q8',0,0),('q8','q7',15,0)])
-    g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(1,1),(0,2),(-1,1),(-2,-1),(2,-1),(-1,-2),(1,-2)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q1',0,0),('q1','q5',0,0),('q1','q6',0,0),('q5','q7',0,0),('q6','q8',0,0)])
-    g.save_tikzpicture_to_file()
+    #g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(1,1),(0,2),(-1,1),(-2,-1),(2,-1),(-1,-2),(1,-2)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q1',0,0),('q1','q5',0,0),('q1','q6',0,0),('q5','q7',0,0),('q6','q8',0,0)])
+    #g.save_tikzpicture_to_file()
+    #g.run_pdflatex()
+
     #a file handler for .graph files
-    g.run_pdflatex()
+    h = InputHandler("g2.graph")
+    g1 = Graph(h.num_vertices, h.vertex_names, h.vertex_position,h.edge_relations,h.vertex_style,h.edge_style)
+    g1.save_tikzpicture_to_file()
+    g1.run_pdflatex()
+    
     
 if __name__ == '__main__':
     main()
