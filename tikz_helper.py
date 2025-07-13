@@ -2,6 +2,7 @@ import os
 import glob
 import subprocess
 from typing import Optional
+import sys
 class Graph:
     def __init__(self, n:int, vn: list[str], pos:list[tuple[float,float]] , erel:list[tuple[str,str,float,float]], ns:Optional[list[str]] = None,es:Optional[list[str]] = None) -> None:
         if len(pos) == n:
@@ -13,12 +14,12 @@ class Graph:
             print('Number of coordinates are not mathcing the number of vertcies')
             exit(0)
 
-        if ns is None or len(ns)>1:
+        if ns is None :
             self.vertex_style = ['yellow_vertex','[fill=yellow, draw=black, shape=circle, text=red]']
         else:
             self.vertex_style = ns
 
-        if es is None or len(es)>1:
+        if es is None :
             self.edge_style = ["red_edge" , "[fill=none, ->, draw=red, thick]"]
         else :
             self.edge_style = es
@@ -61,7 +62,7 @@ class Graph:
         # Open a file in write mode
         print(f"Using {file_name} for writing into tikzpicture?[y/n]")
         x = input()
-        if x=="Y" or x=='y':
+        if x=="Y" or x=='y' or x =='':
             with open(file_name, "w") as file:
                 file.write(self.tikzpicture)
         else:
@@ -86,7 +87,7 @@ class Graph:
         files = glob.glob("temp.*")
         print(f"Delete the following files:{files}?[y/n]")
         x = input()
-        if x=='Y' or x =='y':
+        if x=='Y' or x =='y' or x=='':
             for x in glob.glob("temp.*"): 
                 os.remove(x)
         else:
@@ -117,8 +118,8 @@ class InputHandler:
             self.vertex_names:list[str] = []
             self.vertex_position: list[tuple[float,float]] = []
             self.edge_relations : list[tuple[str,str,float,float]] = []
-            self.vertex_style:list[str] = []
-            self.edge_style:list[str] = []
+            self.vertex_style:Optional[list[str]] = []
+            self.edge_style:Optional[list[str]] = []
             self.input_graph()
         else:
             print(f"No Such file is found: {file_path}")
@@ -129,42 +130,68 @@ class InputHandler:
         lines = lines[1:]
         
         self.vertex_names = lines[0].split(' ')
+
+        if len(self.vertex_names) != self.num_vertices:
+            print("Number of vertices does not match the number of vertex names")
+            sys.exit(1)
         self.vertex_names[self.num_vertices -1] = self.vertex_names[self.num_vertices -1][:-1] 
         lines = lines[1:]
+        try:
+            self.vertex_position = [tuple(map(float, lines[c].split(',')))  for c in range(self.num_vertices)]
+        except Exception as e:
+            print(f'{"="*20}\n{e}\n{"="*20}')
+            print("There is some problem in number of positions and number of vertices specified earlier.\nRefer to README to properly get the .graph file ")
+            sys.exit(1)
         
-        self.vertex_position = [tuple(map(float, lines[c].split(',')))  for c in range(self.num_vertices)]
-
         lines = lines[self.num_vertices:]
         if "#" in lines[0] :
-            s, e = tuple ([i for i, x in enumerate(lines) if "#" in x ])
+            try:
+                s, e = tuple ([i for i, x in enumerate(lines) if "#" in x ])
+            except ValueError as e:
+                print(e)
+                print("Edge relations must end with '#'\nSee the README file.")
+                sys.exit(1)
             edges = lines[s+1:e]
             self.edge_relations = [ tuple(map(lambda x : float (x[1]) if x[0]>1 else x[1], enumerate(edge.split(',')))) for edge in edges]
             lines = lines[e+1:]
+        else:
+            print(f"Edge relations must start with '#'. First few lines of \n{'='*10}\n{''.join(lines[:2])}\n{'='*10}\nSee the README file.")
+            sys.exit(1)
+        if len(lines)!=0:
+            sp1 = lines[0].index(' ')
+            sp2 = lines[1].index(' ')
+            self.vertex_style = [lines[0][:sp1],lines[0][sp1+1:-1]]
+            self.edge_style =  [lines[1][:sp2],lines[1][sp2+1:-1]]
+        else:
+            self.vertex_style = None
+            self.edge_style = None
         
-        sp1 = lines[0].index(' ')
-        sp2 = lines[1].index(' ')
-        self.vertex_style = [lines[0][:sp1],lines[0][sp1+1:-1]]
-        
-        self.edge_style =  [lines[1][:sp2],lines[1][sp2+1:-1]]
+    
+    def create_Graph(self):
+        g = Graph(self.num_vertices, self.vertex_names, self.vertex_position,self.edge_relations,self.vertex_style,self.edge_style)
+        return g
     
     def __str__(self) -> str:
         return f"{self.num_vertices}\n{self.vertex_names}\n{self.vertex_position}\n{self.edge_relations}\n{self.edge_style}\n{self.vertex_style}"
         
         
 
-def main():
+def main(file_name='g2.graph'):
     #edge relation : ('starting vertex', 'ending vertec', left bend, right bend)
     #g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(0,2),(2,4),(4,2),(4,0),(2,-2),(2,-4),(6,4)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q5',0,0),('q5','q6',0,0),('q6','q7',0,0),('q4','q8',0,0),('q8','q7',15,0)])
     #g = Graph(8, [f"q{x}" for x in range(1,9)], [(0,0),(1,1),(0,2),(-1,1),(-2,-1),(2,-1),(-1,-2),(1,-2)], [('q1','q2',0,0), ('q2','q3',0,0),('q3','q4',0,0),('q4','q1',0,0),('q1','q5',0,0),('q1','q6',0,0),('q5','q7',0,0),('q6','q8',0,0)])
     #g.save_tikzpicture_to_file()
     #g.run_pdflatex()
-
-    #a file handler for .graph files
-    h = InputHandler("g2.graph")
-    g1 = Graph(h.num_vertices, h.vertex_names, h.vertex_position,h.edge_relations,h.vertex_style,h.edge_style)
+    
+    h = InputHandler(file_name)
+    g1 = h.create_Graph()
     g1.save_tikzpicture_to_file()
     g1.run_pdflatex()
     
     
 if __name__ == '__main__':
-    main()
+    arg_list = sys.argv
+    if len(arg_list) == 2:
+        main(arg_list[1])
+    else: 
+        print('usage: pyhton3 tikz_helper.py pat/to/the/file.graph')
