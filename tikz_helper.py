@@ -137,7 +137,7 @@ class InputHandler:
         self.vertex_names[self.num_vertices -1] = self.vertex_names[self.num_vertices -1][:-1] 
         lines = lines[1:]
         try:
-            self.vertex_position = [tuple(map(float, lines[c].split(',')))  for c in range(self.num_vertices)]
+            self.vertex_position = [tuple(map(lambda x : float(eval(x)), lines[c].split(',')))  for c in range(self.num_vertices)]
         except Exception as e:
             print(f'{"="*20}\n{e}\n{"="*20}')
             print("There is some problem in number of positions and number of vertices specified earlier.\nRefer to README to properly get the .graph file ")
